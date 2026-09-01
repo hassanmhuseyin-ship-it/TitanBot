@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
@@ -15,6 +15,7 @@ import { loadCommands, registerCommands as registerSlashCommands } from './handl
 import { runSafeTask, handleTaskError, ErrorCodes } from './utils/errorHandler.js';
 import { initializeMusic } from './services/music/riffySetup.js';
 import { shutdownMusic } from './services/music/playerHandler.js';
+import { initializeLanguageMiddleware } from './middleware/languageMiddleware.js';
 import pkg from '../package.json' with { type: 'json' };
 import { EXPECTED_SCHEMA_VERSION, EXPECTED_SCHEMA_LABEL } from './config/database/schemaVersion.js';
 
@@ -45,6 +46,7 @@ class TitanBot extends Client {
     this.modals = new Collection();
     this.cooldowns = new Collection();
     this.db = null;
+    this.languageService = null;
     this.rest = new REST({ version: '10' }).setToken(config.bot.token);
   }
 
@@ -73,6 +75,10 @@ class TitanBot extends Client {
         startupLog(`✅ Database Status: ${dbStatus.connectionType} (fully operational)`);
       }
       
+      startupLog('Initializing language middleware...');
+      this.languageService = initializeLanguageMiddleware(this);
+      startupLog('✅ Language middleware initialized');
+      
       startupLog('Starting web server...');
       this.startWebServer();
       
@@ -99,7 +105,7 @@ class TitanBot extends Client {
         : 'Connected (persistent data enabled)';
       const handlerSummary = `${this.buttons.size} buttons, ${this.selectMenus.size} menus, ${this.modals.size} modals`;
       startupLog(
-        `ONLINE ✅ | ${this.commands.size} commands loaded | ${handlerSummary} | Database: ${databaseMode}`
+        `ONLINE ✅ | ${this.commands.size} commands loaded | ${handlerSummary} | Database: ${databaseMode} | Language: Bilingual (AR/EN)`
       );
       
       this.setupCronJobs();
