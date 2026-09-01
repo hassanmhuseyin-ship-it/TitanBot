@@ -79,7 +79,7 @@ export const addXp = wrapServiceBoundary(async function addXp(client, guild, mem
       level: levelData.level,
       xp: levelData.xp,
       totalXp: levelData.totalXp,
-      xpNeeded: getXpForLevel(levelData.level + 1),
+      xpNeeded: getXpForLevel(levelData.level),
       leveledUp: didLevelUp,
     };
   });
