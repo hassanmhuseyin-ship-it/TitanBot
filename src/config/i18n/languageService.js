@@ -1,4 +1,4 @@
-import { t, translations } from './translations.js';
+import { t, translations, getCategory } from './translations.js';
 
 /**
  * Language configuration and management
