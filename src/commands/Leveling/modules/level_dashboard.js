@@ -314,14 +314,28 @@ export default {
                     ErrorTypes.USER_INPUT,
                     'This dashboard can only be used inside a server.',
                 );
-            }
-
             const guildId = interaction.guild.id;
 
-            const cfg = await getLevelingConfig(
-                client,
-                guildId,
-            );
+const cfg = await getLevelingConfig(
+    client,
+    guildId,
+);
+
+const isConfigured =
+    cfg.configured === true ||
+    Boolean(
+        cfg.levelUpChannel ||
+        cfg.xpRange ||
+        cfg.xpPerMessage
+    );
+
+if (!isConfigured) {
+    throw new TitanBotError(
+        'Leveling system not configured',
+        ErrorTypes.CONFIGURATION,
+        'The leveling system has not been set up yet. Run `/level setup` first to configure it.',
+    );
+}
 
             if (!cfg.configured) {
                 throw new TitanBotError(
