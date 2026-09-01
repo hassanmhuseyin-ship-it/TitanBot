@@ -1,10 +1,10 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { LanguageService, SUPPORTED_LANGUAGES, translate } from '../../config/i18n/languageService.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('language')
-    .setDescription('Change your language preference / غير تفضيلاتك اللغوية')
+    .setDescription('Change server language / غير لغة السيرفر')
     .addStringOption(option =>
       option
         .setName('lang')
@@ -14,15 +14,17 @@ export default {
           { name: 'English 🇺🇸', value: 'en' },
           { name: 'العربية 🇸🇦', value: 'ar' }
         )
-    ),
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .setDMPermission(false),
 
   async execute(interaction, database) {
     const selectedLanguage = interaction.options.getString('lang');
     const languageService = new LanguageService(database);
 
     try {
-      await languageService.setUserLanguage(
-        interaction.user.id,
+      // تغيير اللغة للسيرفر كله
+      await languageService.setGuildLanguage(
         interaction.guildId,
         selectedLanguage
       );
@@ -34,10 +36,13 @@ export default {
         .setColor('#5865F2')
         .setTitle(`${langInfo.flag} ${langInfo.nativeName}`)
         .setDescription(message)
-        .setFooter({ text: 'Language preference saved' })
+        .addFields(
+          { name: '📌 تم التطبيق على', value: `جميع أعضاء السيرفر` }
+        )
+        .setFooter({ text: 'Server language changed | تم تغيير لغة السيرفر' })
         .setTimestamp();
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed] });
     } catch (error) {
       console.error('Error in language command:', error);
       const errorMsg = translate(selectedLanguage || 'ar', 'general.commandError');
