@@ -33,11 +33,6 @@ import {
 import { botHasPermission } from '../../../utils/permissionGuard.js';
 import { startDashboardSession } from '../../../utils/dashboardSession.js';
 
-
-/* =========================================================
-   DASHBOARD EMBED
-========================================================= */
-
 function buildDashboardEmbed(cfg, guild) {
     const channel = cfg.levelUpChannel
         ? `<#${cfg.levelUpChannel}>`
@@ -115,7 +110,7 @@ function buildDashboardEmbed(cfg, guild) {
                 name: 'Announcements',
                 value: cfg.announceLevelUp !== false
                     ? '**Enabled**'
-                    : '**Disabled**',
+                    : '**Disabled**,
                 inline: true,
             },
             {
@@ -160,11 +155,6 @@ function buildDashboardEmbed(cfg, guild) {
         .setTimestamp();
 }
 
-
-/* =========================================================
-   SELECT MENU
-========================================================= */
-
 function buildSelectMenu(guildId) {
     return new StringSelectMenuBuilder()
         .setCustomId(`level_cfg_${guildId}`)
@@ -172,74 +162,53 @@ function buildSelectMenu(guildId) {
         .addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel('Change Level-up Channel')
-                .setDescription(
-                    'Set the channel where level-up notifications are sent',
-                )
+                .setDescription('Set the channel where level-up notifications are sent')
                 .setValue('channel')
                 .setEmoji('📢'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Edit Level-up Message')
-                .setDescription(
-                    'Customise the message shown when a user levels up',
-                )
+                .setDescription('Customise the message shown when a user levels up')
                 .setValue('message')
                 .setEmoji('💬'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Set XP Range')
-                .setDescription(
-                    'Set the minimum and maximum XP rewarded per message',
-                )
+                .setDescription('Set the minimum and maximum XP rewarded per message')
                 .setValue('xp_range')
                 .setEmoji('🎲'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Set XP Cooldown')
-                .setDescription(
-                    'Seconds between XP grants for the same user',
-                )
+                .setDescription('Seconds between XP grants for the same user')
                 .setValue('xp_cooldown')
                 .setEmoji('⏱️'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Add Role Reward')
-                .setDescription(
-                    'Award a role when a user reaches a specific level',
-                )
+                .setDescription('Award a role when a user reaches a specific level')
                 .setValue('role_reward_add')
                 .setEmoji('🏆'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Remove Role Reward')
-                .setDescription(
-                    'Remove a role reward from a specific level',
-                )
+                .setDescription('Remove a role reward from a specific level')
                 .setValue('role_reward_remove')
                 .setEmoji('🗑️'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Ignored Channels')
-                .setDescription(
-                    'Toggle channels where XP will not be awarded',
-                )
+                .setDescription('Toggle channels where XP will not be awarded')
                 .setValue('ignore_channels')
                 .setEmoji('🚫'),
 
             new StringSelectMenuOptionBuilder()
                 .setLabel('Ignored Roles')
-                .setDescription(
-                    'Toggle roles that will not receive XP',
-                )
+                .setDescription('Toggle roles that will not receive XP')
                 .setValue('ignore_roles')
                 .setEmoji('🚫'),
         );
 }
-
-
-/* =========================================================
-   BUTTONS
-========================================================= */
 
 function buildButtonRow(cfg, guildId, disabled = false) {
     const announceOn = cfg.announceLevelUp !== false;
@@ -270,11 +239,6 @@ function buildButtonRow(cfg, guildId, disabled = false) {
     );
 }
 
-
-/* =========================================================
-   REFRESH DASHBOARD
-========================================================= */
-
 async function refreshDashboard(rootInteraction, cfg, guildId) {
     try {
         await InteractionHelper.safeEditReply(rootInteraction, {
@@ -298,11 +262,6 @@ async function refreshDashboard(rootInteraction, cfg, guildId) {
     }
 }
 
-
-/* =========================================================
-   MAIN EXECUTE
-========================================================= */
-
 export default {
     prefixOnly: false,
 
@@ -314,30 +273,27 @@ export default {
                     ErrorTypes.USER_INPUT,
                     'This dashboard can only be used inside a server.',
                 );
+            }
+
             const guildId = interaction.guild.id;
 
-const cfg = await getLevelingConfig(
-    client,
-    guildId,
-);
+            const cfg = await getLevelingConfig(
+                client,
+                guildId,
+            );
 
-const isConfigured =
-    cfg.configured === true ||
-    Boolean(
-        cfg.levelUpChannel ||
-        cfg.xpRange ||
-        cfg.xpPerMessage
-    );
+            // FIX: allow dashboard when /level setup already created
+            // the configuration but the configured flag is missing/false.
+            const hasLevelingSettings =
+                Boolean(
+                    cfg.levelUpChannel ||
+                    cfg.xpRange ||
+                    cfg.xpPerMessage ||
+                    cfg.xpCooldown !== undefined ||
+                    cfg.levelUpMessage
+                );
 
-if (!isConfigured) {
-    throw new TitanBotError(
-        'Leveling system not configured',
-        ErrorTypes.CONFIGURATION,
-        'The leveling system has not been set up yet. Run `/level setup` first to configure it.',
-    );
-}
-
-            if (!cfg.configured) {
+            if (cfg.configured === false && !hasLevelingSettings) {
                 throw new TitanBotError(
                     'Leveling system not configured',
                     ErrorTypes.CONFIGURATION,
@@ -567,11 +523,6 @@ if (!isConfigured) {
     },
 };
 
-
-/* =========================================================
-   ADD ROLE REWARD
-========================================================= */
-
 async function handleRoleRewardAdd(
     selectInteraction,
     rootInteraction,
@@ -716,11 +667,6 @@ async function handleRoleRewardAdd(
     );
 }
 
-
-/* =========================================================
-   REMOVE ROLE REWARD
-========================================================= */
-
 async function handleRoleRewardRemove(
     selectInteraction,
     rootInteraction,
@@ -780,12 +726,8 @@ async function handleRoleRewardRemove(
         .setRequired(true);
 
     modal.addComponents(
-        new ActionRowBuilder().addComponents(
-            infoInput,
-        ),
-        new ActionRowBuilder().addComponents(
-            levelInput,
-        ),
+        new ActionRowBuilder().addComponents(infoInput),
+        new ActionRowBuilder().addComponents(levelInput),
     );
 
     await selectInteraction.showModal(modal);
@@ -851,11 +793,6 @@ async function handleRoleRewardRemove(
         guildId,
     );
 }
-
-
-/* =========================================================
-   LEVEL-UP CHANNEL
-========================================================= */
 
 async function handleChannel(
     selectInteraction,
@@ -979,11 +916,6 @@ async function handleChannel(
     );
 }
 
-
-/* =========================================================
-   IGNORED CHANNELS
-========================================================= */
-
 async function handleIgnoreChannels(
     selectInteraction,
     rootInteraction,
@@ -1096,11 +1028,6 @@ async function handleIgnoreChannels(
     );
 }
 
-
-/* =========================================================
-   IGNORED ROLES
-========================================================= */
-
 async function handleIgnoreRoles(
     selectInteraction,
     rootInteraction,
@@ -1209,11 +1136,6 @@ async function handleIgnoreRoles(
         guildId,
     );
 }
-
-
-/* =========================================================
-   LEVEL-UP MESSAGE
-========================================================= */
 
 async function handleMessage(
     selectInteraction,
@@ -1327,11 +1249,6 @@ async function handleMessage(
         guildId,
     );
 }
-
-
-/* =========================================================
-   XP RANGE
-========================================================= */
 
 async function handleXpRange(
     selectInteraction,
@@ -1493,11 +1410,6 @@ async function handleXpRange(
     );
 }
 
-
-/* =========================================================
-   XP COOLDOWN
-========================================================= */
-
 async function handleXpCooldown(
     selectInteraction,
     rootInteraction,
@@ -1598,7 +1510,7 @@ async function handleXpCooldown(
                     newCooldown !== 1
                         ? 's'
                         : ''
-                }**.${
+                        }**.${
                     newCooldown === 0
                         ? '\n> ⚠️ A cooldown of 0 means XP is granted on every message.'
                         : ''
@@ -1613,4 +1525,4 @@ async function handleXpCooldown(
         cfg,
         guildId,
     );
-}
+                }
